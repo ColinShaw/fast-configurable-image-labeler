@@ -1,4 +1,4 @@
-# Cat image labeler
+# Fast Cat Face Labeler
 
 
 
