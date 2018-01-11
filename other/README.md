@@ -13,7 +13,7 @@ negative feature set.  This isn't a big deal since it is the
 negative feature set and we don't want to detect the dogs or 
 the error detections as member of our positive image classes
 anyway.  The Oxford-IIIT pet data set itself can be obtained 
-from `http://www.robots.ox.ac.uk/~vgg/data/pets/`.  
+[here](http://www.robots.ox.ac.uk/~vgg/data/pets/). 
 
 For the specific positive image classes, you can simply 
 run the `video_to_class_samples.py` script with an argument
