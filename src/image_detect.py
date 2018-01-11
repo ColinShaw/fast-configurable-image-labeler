@@ -3,7 +3,7 @@ from keras.models          import Model
 from scipy.misc            import imread, imresize
 from sklearn.svm           import LinearSVC
 from sklearn.decomposition import PCA
-from os.path               import isfile, splitext
+from os.path               import isfile, splitext, isdir
 from os                    import listdir
 import numpy as np
 import pickle
@@ -77,7 +77,18 @@ class ImageDetect(object):
         return features, labels
 
     def __generate_positive_training_data(self):
-        return [], []
+        features, labels = [], []
+        dirlist = listdir('data/positive')
+        dir_names = [d for d in dirlist if isdir(d)]
+        for dir_name in dir_names:
+            dirlist = listdir('data/positive/{}'.format(dir_name))
+            image_names = [f for f in dirlist if 'png' in f]
+            for image_name in image_names:
+                labels.append(dir_name)
+                feature = imread('data/positive/{}/{}'.format(dir_name, image_name))
+                feature = self.__conv_predict(feature)
+                features.append(feature)
+        return features, labels
 
     def __generate_training_data(self):
         features_p, labels_p = self.__generate_positive_training_data()
@@ -93,7 +104,8 @@ class ImageDetect(object):
         features = self.__decomposition.transform(features)
         self.__classifier.fit(features, labels)
    
-    def detect(self, image):
+    def annotations(self, image):
+        results = []
         gray  = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         faces = self.__cascade.detectMultiScale(gray)
         for face in faces:
@@ -101,20 +113,20 @@ class ImageDetect(object):
             feature = self.__conv_predict(image[y:y+h,x:x+w])
             feature = self.__decomposition.transform([feature])
             label   = self.__classifier.predict(feature)[0]
-            cv2.rectangle(
-                image,
-                (x,y),
-                (x+w,y+h),
-                (0,255,0),
-                2
-            )
+            results.append((face, label))
+        return results 
+
+    def label_image(self, image):
+        items = self.annotations(image)
+        for item in items:
+            x,y,w,h = item[0]
             cv2.putText(
                 image,
-                label,
-                 (x+w+10,y+h),
-                 0,
-                 0.3,
-                 (0,255,0)
+                item[1],
+                (x+w+10,y+h),
+                0,
+                0.3,
+                (0,255,0)
             )
         return image
 
