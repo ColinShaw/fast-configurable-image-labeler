@@ -16,7 +16,7 @@ def detect(image):
     if len(faces) == 1 and len(image[0][0]) == 3:
         x,y,w,h = faces[0]
         image   = image[y:y+h,x:x+w]
-        imsave(image, '{}/{}.png'.format(class_name, i))
+        imsave(image, 'data/{}/{}.png'.format(class_name, i))
         i += 1
 
 clip = load_video(video_file)
