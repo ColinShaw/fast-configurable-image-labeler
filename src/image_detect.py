@@ -10,9 +10,9 @@ import pickle
 import cv2
 
 
-CLASSIFIER_MODEL    = 'models/classifier.p'
-DECOMPOSITION_MODEL = 'models/decomposition.p'
-CASCADE_MODEL       = 'models/cat_hog.xml'
+CASCADE_MODEL       = 'models/cascades/cat_lbp.xml'
+CLASSIFIER_MODEL    = 'models/trained/classifier.p'
+DECOMPOSITION_MODEL = 'models/trained/decomposition.p'
 
 
 class ImageDetect(object):
@@ -58,26 +58,31 @@ class ImageDetect(object):
         fp = open(DECOMPOSITION_MODEL, 'rb')
         self.__decomposition = pickle.load(fp)
 
-    def __vgg16_predict(self, image):
+    def __conv_predict(self, image):
         image = imresize(image, (128,128)).astype(np.float32)
         image = imagenet_utils.preprocess_input(image)
         image = np.reshape(image, (1,128,128,3))
         label = self.__model.predict(image)
         return label.ravel()
 
-    # Needs changing to directory labeling
-    def __generate_training_data(self):
+    def __generate_negative_training_data(self):
         features, labels = [], []
-        dirlist = listdir('data/train')
-        images  = [f for f in dirlist if 'jpg' in f] 
-        for image in images:
-            filename = splitext(image)[0]
-            label = ''.join(i for i in filename if not i.isdigit())
-            labels.append(label)
-            feature = imread('data/train/{}.jpg'.format(filename))
-            feature = self.__vgg16_predict(feature)
+        dirlist = listdir('data/negative') 
+        image_names = [f for f in dirlist if 'png' in f] 
+        for image_name in image_names:
+            labels.append('null')
+            feature = imread('data/negative/{}'.format(image_name))
+            feature = self.__conv_predict(feature)
             features.append(feature)
         return features, labels
+
+    def __generate_positive_training_data(self):
+        return [], []
+
+    def __generate_training_data(self):
+        features_p, labels_p = self.__generate_positive_training_data()
+        features_n, labels_n = self.__generate_negative_training_data()
+        return features_p + features_n, labels_p + labels_n
 
     def __train_classifier(self):
         print('Training...')
@@ -93,7 +98,7 @@ class ImageDetect(object):
         faces = self.__cascade.detectMultiScale(gray)
         for face in faces:
             x,y,w,h = face
-            feature = self.__vgg16_predict(image[y:y+h,x:x+w])
+            feature = self.__conv_predict(image[y:y+h,x:x+w])
             feature = self.__decomposition.transform([feature])
             label   = self.__classifier.predict(feature)[0]
             cv2.rectangle(
