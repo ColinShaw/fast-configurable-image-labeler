@@ -9,6 +9,7 @@ import sys
 video_file = argv[0] 
 class_name = splitext(video_file)[0]
 i, cascade = 0, cv2.CascadeClassifier('../models/cat_lbp.xml')
+
 if not exists('../data/positive/{}'.format(class_name)):
     makedirs('../data/positive/{}'.format(class_name)
 
@@ -16,13 +17,14 @@ def detect(image):
     if len(image.shape) == 3:
         gray  = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         faces = cascade.detectMultiScale(gray)
-        if len(faces) == 1:
-            x,y,w,h = faces[0]
+        for face in faces:
+            x,y,w,h = face
             image   = image[y:y+h,x:x+w]
-            imsave('../data/positive/{}/{}.png'.format(class_name, i), image)
-            i += 1
+            if image.shape[0]>63 and image.shape[1]>63:
+                save_name = '../data/positive/{}/{}.png'.format(class_name, i)
+                imsave(save_name, image)
+                i += 1
 
-clip = load_video(video_file)
-for frame in clip.iter_frames():
+for frame in load_video(video_file).iter_frames():
     detect(frame)
 

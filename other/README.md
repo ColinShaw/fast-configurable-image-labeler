@@ -12,7 +12,9 @@ some images of dog faces (and some just bad detections) in the
 negative feature set.  This isn't a big deal since it is the 
 negative feature set and we don't want to detect the dogs or 
 the error detections as member of our positive image classes
-anyway.  The Oxford-IIIT pet data set itself can be obtained 
+anyway.  You may want to remove any that are difficult to 
+differentiate from some of your positive class examples, 
+though.  The Oxford-IIIT pet data set itself can be obtained 
 [here](http://www.robots.ox.ac.uk/~vgg/data/pets/). 
 
 For the specific positive image classes, you can simply 
