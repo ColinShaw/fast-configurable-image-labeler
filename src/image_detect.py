@@ -10,9 +10,9 @@ import pickle
 import cv2
 
 
-CASCADE_MODEL       = 'models/cascades/cat_lbp.xml'
-CLASSIFIER_MODEL    = 'models/trained/classifier.p'
-DECOMPOSITION_MODEL = 'models/trained/decomposition.p'
+CASCADE_MODEL       = 'models/cat_lbp.xml'
+CLASSIFIER_MODEL    = 'models/classifier.p'
+DECOMPOSITION_MODEL = 'models/decomposition.p'
 
 
 class ImageDetect(object):
@@ -101,7 +101,6 @@ class ImageDetect(object):
     def __train_classifier(self):
         print('Training...')
         features, labels = self.__generate_training_data()
-        print(labels)
         self.__decomposition = PCA()
         self.__classifier    = LinearSVC()
         self.__decomposition.fit(features)
