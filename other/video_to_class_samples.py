@@ -1,20 +1,13 @@
 from moviepy.editor import VideoFileClip
-from os.path        import splitext, exists
+from os.path        import exists, splitext
 from scipy.misc     import imsave
-from os             import makedirs
-from sys            import argv
+from os             import makedirs, listdir
 import cv2
        
 
-video_file = argv[1] 
-class_name = splitext(video_file)[0]
-class_name = ''.join(i for i in class_name if not i.isdigit())
 i, cascade = 0, cv2.CascadeClassifier('../models/cat_lbp.xml')
 
-if not exists('../data/positive/{}'.format(class_name)):
-    makedirs('../data/positive/{}'.format(class_name))
-
-def detect(image):
+def detect(class_name, image):
     global i
     if len(image.shape) == 3:
         if image.shape[2] == 3:
@@ -28,6 +21,16 @@ def detect(image):
                     imsave(save_name, image)
                     i += 1
 
-for frame in VideoFileClip(video_file).iter_frames():
-    detect(frame)
+dirlist = listdir('videos')
+video_names = [f for f in dirlist if 'mp4' in f]
+for video_name in video_names:
+    class_name = splitext(video_name)[0]
+    class_name = ''.join(i for i in class_name if not i.isdigit())
+
+    if not exists('../data/positive/{}'.format(class_name)):
+        makedirs('../data/positive/{}'.format(class_name))
+
+    video_file = 'videos/{}'.format(video_name)
+    for frame in VideoFileClip(video_file).iter_frames():
+        detect(class_name, frame)
 

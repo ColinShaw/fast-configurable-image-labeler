@@ -62,12 +62,12 @@ class ImageDetect(object):
         image = imresize(image, (128,128)).astype(np.float32)
         image = imagenet_utils.preprocess_input(image)
         image = imresize(image, (128,128)).astype(np.float32)
-        print(image.shape)
         image = np.reshape(image, (1,128,128,3))
         label = self.__model.predict([image])
         return label.ravel()
 
     def __generate_negative_training_data(self):
+        print(' Negative classes...')
         features, labels = [], []
         dirlist = listdir('data/negative') 
         image_names = [f for f in dirlist if 'png' in f] 
@@ -79,9 +79,10 @@ class ImageDetect(object):
         return features, labels
 
     def __generate_positive_training_data(self):
+        print(' Positive classes...')
         features, labels = [], []
         dirlist = listdir('data/positive')
-        dir_names = [d for d in dirlist if isdir(d)]
+        dir_names = [d for d in dirlist if isdir('data/positive/{}'.format(d))]
         for dir_name in dir_names:
             dirlist = listdir('data/positive/{}'.format(dir_name))
             image_names = [f for f in dirlist if 'png' in f]
@@ -100,6 +101,7 @@ class ImageDetect(object):
     def __train_classifier(self):
         print('Training...')
         features, labels = self.__generate_training_data()
+        print(labels)
         self.__decomposition = PCA()
         self.__classifier    = LinearSVC()
         self.__decomposition.fit(features)
