@@ -101,10 +101,11 @@ class ImageDetect(object):
     def __train_classifier(self):
         print('Training...')
         features, labels = self.__generate_training_data()
+        print(' Initial dimesionality: {}'.format(len(features[0])))
         self.__decomposition = PCA()
-        self.__classifier    = LinearSVC()
-        self.__decomposition.fit(features)
-        features = self.__decomposition.transform(features)
+        features = self.__decomposition.fit_transform(features)
+        print(' Reduced dimensionality: {}'.format(len(features[0])))
+        self.__classifier = LinearSVC()
         self.__classifier.fit(features, labels)
    
     def annotations(self, image):
@@ -126,7 +127,7 @@ class ImageDetect(object):
             cv2.putText(
                 image,
                 item[1],
-                (x+w+10,y+h),
+                (x+w,y+h),
                 0,
                 0.3,
                 (0,255,0)
