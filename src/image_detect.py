@@ -61,8 +61,10 @@ class ImageDetect(object):
     def __conv_predict(self, image):
         image = imresize(image, (128,128)).astype(np.float32)
         image = imagenet_utils.preprocess_input(image)
+        image = imresize(image, (128,128)).astype(np.float32)
+        print(image.shape)
         image = np.reshape(image, (1,128,128,3))
-        label = self.__model.predict(image)
+        label = self.__model.predict([image])
         return label.ravel()
 
     def __generate_negative_training_data(self):
