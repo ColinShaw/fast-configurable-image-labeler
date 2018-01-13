@@ -1,5 +1,5 @@
-`cat_lbp.xml` is the open source LBP cascade that can be found 
-[here](http://www.vision-ary.net/2015/03/boost-the-world-cat-faces/).
+The Caffe files are MobileNet trained as an SSD.  These were originally 
+done by [Liu, Anguelov, Erhan, et al](https://arxiv.org/abs/1512.02325).
 
 The pickle files for dimensionality reduction and classification
 can be removed to reset the detector.

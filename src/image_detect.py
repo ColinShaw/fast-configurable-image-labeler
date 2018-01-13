@@ -1,4 +1,4 @@
-from keras.applications    import VGG16, imagenet_utils
+from keras.applications    import mobilenet, imagenet_utils
 from keras.models          import Model
 from scipy.misc            import imread, imresize
 from sklearn.svm           import LinearSVC
@@ -10,7 +10,8 @@ import pickle
 import cv2
 
 
-CONFIDENCE_THRESHOLD = 0.5
+CONFIDENCE_THRESHOLD = 0.7
+PCA_COMPONENTS       = 30
 CAFFE_PROTOTYPE      = 'models/mobilenet_ssd.prototxt'
 CAFFE_MODEL          = 'models/mobilenet_ssd.caffemodel'
 CLASSIFIER_MODEL     = 'models/classifier.p'
@@ -23,22 +24,24 @@ class ImageDetect(object):
         self.__make_convolutional_model()
         self.__make_caffe_model()
         if isfile(CLASSIFIER_MODEL) and isfile(DECOMPOSITION_MODEL):
+            print('Using existing models...')
             self.__load_classifier()
             self.__load_decomposition()
         else:
+            print('Training...')
             self.__train_classifier()
             self.__save_classifier()
             self.__save_decomposition()
 
     def __make_convolutional_model(self):
-        vgg16 = VGG16(
+        mn = mobilenet.MobileNet(
             weights     = 'imagenet', 
             include_top = False,
-            input_shape = (224,224,3)
+            input_shape = (128,128,3)
         )
         self.__model = Model(
-            inputs  = [vgg16.input], 
-            outputs = [vgg16.get_layer('block5_conv3').output]
+            inputs  = [mn.input], 
+            outputs = [mn.get_layer('conv_pw_13_relu').output]
         )
 
     def __make_caffe_model(self):
@@ -61,15 +64,14 @@ class ImageDetect(object):
         self.__decomposition = pickle.load(fp)
 
     def __conv_predict(self, image):
-        image = imresize(image, (224,224)).astype(np.float32)
+        image = imresize(image, (128,128)).astype(np.float32)
         image = imagenet_utils.preprocess_input(image)
-        image = imresize(image, (224,224)).astype(np.float32)
-        image = np.reshape(image, (1,224,224,3))
+        image = imresize(image, (128,128)).astype(np.float32)
+        image = np.reshape(image, (1,128,128,3))
         label = self.__model.predict([image])
         return label.ravel()
 
     def __generate_negative_training_data(self):
-        print(' Negative classes...')
         features, labels = [], []
         dirlist = listdir('data/negative') 
         image_names = [f for f in dirlist if 'png' in f] 
@@ -81,7 +83,6 @@ class ImageDetect(object):
         return features, labels
 
     def __generate_positive_training_data(self):
-        print(' Positive classes...')
         features, labels = [], []
         dirlist = listdir('data/positive')
         dir_names = [d for d in dirlist if isdir('data/positive/{}'.format(d))]
@@ -101,12 +102,9 @@ class ImageDetect(object):
         return features_p + features_n, labels_p + labels_n
 
     def __train_classifier(self):
-        print('Training...')
         features, labels = self.__generate_training_data()
-        print(' Initial dimesionality: {}'.format(len(features[0])))
-        self.__decomposition = PCA()
+        self.__decomposition = PCA(n_components=PCA_COMPONENTS)
         features = self.__decomposition.fit_transform(features)
-        print(' Reduced dimensionality: {}'.format(len(features[0])))
         self.__classifier = LinearSVC()
         self.__classifier.fit(features, labels)
    
@@ -127,30 +125,34 @@ class ImageDetect(object):
                 bounds  = cats[0,0,i,3:7] * np.array([w,h,w,h])
                 bounds  = bounds.astype(np.int)
                 a,b,c,d = bounds
-                feature = self.__conv_predict(image[a:c,b:d])
-                feature = self.__decomposition.transform([feature])
-                label   = self.__classifier.predict(feature)[0]
-                results.append((bounds, label))
+                image   = image[a:c,b:d]
+                if image.shape[0]>127 and image.shape[1]>127:
+                    feature = self.__conv_predict(image)
+                    feature = self.__decomposition.transform([feature])
+                    label   = self.__classifier.predict(feature)[0]
+                    results.append((bounds, label))
         return results 
 
     def label_image(self, image):
         items = self.annotations(image)
         for item in items:
-            a,b,c,d = item[0]
-            cv2.rectangle(
-                image,
-                (a,c),
-                (b,d),
-                (0,255,0),
-                4
-            )
-            cv2.putText(
-                image,
-                item[1],
-                (a,b-10),
-                0,
-                0.3,
-                (0,255,0)
-            )
+            #if item[1] != 'null':
+            if True:
+                a,b,c,d = item[0]
+                cv2.rectangle(
+                    image,
+                    (a,b),
+                    (c,d),
+                    (0,255,0),
+                    1
+                )
+                cv2.putText(
+                    image,
+                    item[1],
+                    (a,b-2),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0,255,0)
+                )
         return image
 
