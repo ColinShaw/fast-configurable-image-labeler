@@ -1,4 +1,4 @@
-from keras.applications    import mobilenet, imagenet_utils
+from keras.applications    import VGG16, imagenet_utils
 from keras.models          import Model
 from scipy.misc            import imread, imresize
 from sklearn.svm           import LinearSVC
@@ -10,16 +10,18 @@ import pickle
 import cv2
 
 
-CASCADE_MODEL       = 'models/cat_lbp.xml'
-CLASSIFIER_MODEL    = 'models/classifier.p'
-DECOMPOSITION_MODEL = 'models/decomposition.p'
+CONFIDENCE_THRESHOLD = 0.5
+CAFFE_PROTOTYPE      = 'models/mobilenet_ssd.prototxt'
+CAFFE_MODEL          = 'models/mobilenet_ssd.caffemodel'
+CLASSIFIER_MODEL     = 'models/classifier.p'
+DECOMPOSITION_MODEL  = 'models/decomposition.p'
 
 
 class ImageDetect(object):
 
     def __init__(self):
         self.__make_convolutional_model()
-        self.__make_cascade_model()
+        self.__make_caffe_model()
         if isfile(CLASSIFIER_MODEL) and isfile(DECOMPOSITION_MODEL):
             self.__load_classifier()
             self.__load_decomposition()
@@ -29,18 +31,18 @@ class ImageDetect(object):
             self.__save_decomposition()
 
     def __make_convolutional_model(self):
-        mn = mobilenet.MobileNet(
+        vgg16 = VGG16(
             weights     = 'imagenet', 
             include_top = False,
-            input_shape = (128,128,3)
+            input_shape = (224,224,3)
         )
         self.__model = Model(
-            inputs  = [mn.input], 
-            outputs = [mn.get_layer('conv_pw_13_relu').output]
+            inputs  = [vgg16.input], 
+            outputs = [vgg16.get_layer('block5_conv3').output]
         )
 
-    def __make_cascade_model(self):
-        self.__cascade = cv2.CascadeClassifier(CASCADE_MODEL)
+    def __make_caffe_model(self):
+        self.__caffe = cv2.dnn.readNetFromCaffe(CAFFE_PROTOTYPE, CAFFE_MODEL)
 
     def __save_classifier(self):
         fp = open(CLASSIFIER_MODEL, 'wb')
@@ -59,10 +61,10 @@ class ImageDetect(object):
         self.__decomposition = pickle.load(fp)
 
     def __conv_predict(self, image):
-        image = imresize(image, (128,128)).astype(np.float32)
+        image = imresize(image, (224,224)).astype(np.float32)
         image = imagenet_utils.preprocess_input(image)
-        image = imresize(image, (128,128)).astype(np.float32)
-        image = np.reshape(image, (1,128,128,3))
+        image = imresize(image, (224,224)).astype(np.float32)
+        image = np.reshape(image, (1,224,224,3))
         label = self.__model.predict([image])
         return label.ravel()
 
@@ -110,24 +112,42 @@ class ImageDetect(object):
    
     def annotations(self, image):
         results = []
-        gray  = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        faces = self.__cascade.detectMultiScale(gray)
-        for face in faces:
-            x,y,w,h = face
-            feature = self.__conv_predict(image[y:y+h,x:x+w])
-            feature = self.__decomposition.transform([feature])
-            label   = self.__classifier.predict(feature)[0]
-            results.append((face, label))
+        h,w     = image.shape[:2]
+        resized = cv2.resize(image, (300,300))
+        scaled  = cv2.dnn.blobFromImage(
+            resized,
+            0.007843,
+            (300,300), 
+            127.5
+        )
+        self.__caffe.setInput(scaled)
+        cats = self.__caffe.forward()
+        for i in np.arange(0, cats.shape[2]):
+            if cats[0,0,i,2] > CONFIDENCE_THRESHOLD and cats[0,0,i,1] == 8:
+                bounds  = cats[0,0,i,3:7] * np.array([w,h,w,h])
+                bounds  = bounds.astype(np.int)
+                a,b,c,d = bounds
+                feature = self.__conv_predict(image[a:c,b:d])
+                feature = self.__decomposition.transform([feature])
+                label   = self.__classifier.predict(feature)[0]
+                results.append((bounds, label))
         return results 
 
     def label_image(self, image):
         items = self.annotations(image)
         for item in items:
-            x,y,w,h = item[0]
+            a,b,c,d = item[0]
+            cv2.rectangle(
+                image,
+                (a,c),
+                (b,d),
+                (0,255,0),
+                4
+            )
             cv2.putText(
                 image,
                 item[1],
-                (x+w,y+h),
+                (a,b-10),
                 0,
                 0.3,
                 (0,255,0)
