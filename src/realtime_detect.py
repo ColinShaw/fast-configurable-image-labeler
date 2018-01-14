@@ -13,7 +13,7 @@ class RealtimeDetect(object):
             ret, image = self.__camera.read()
             if ret:
                 image = self.__imgdet.label_image(image)
-                cv2.imshow('Cat Detection', image)
+                cv2.imshow('Image Detection', image)
                 if cv2.waitKey(25) & 0xFF == ord('q'):
                     break
         self.__camera.release()

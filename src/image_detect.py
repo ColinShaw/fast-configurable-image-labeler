@@ -5,26 +5,28 @@ from sklearn.svm           import LinearSVC
 from sklearn.decomposition import PCA
 from os.path               import isfile, splitext, isdir
 from os                    import listdir
+from config                import Config
+from classes               import Classes
 import numpy as np
 import pickle
 import cv2
 
 
-CONFIDENCE_THRESHOLD = 0.7
-PCA_COMPONENTS       = 30
-NULL_CLASSNAME       = 'null'
-CAFFE_PROTOTYPE      = 'models/mobilenet_ssd.prototxt'
-CAFFE_MODEL          = 'models/mobilenet_ssd.caffemodel'
-CLASSIFIER_MODEL     = 'models/classifier.p'
-DECOMPOSITION_MODEL  = 'models/decomposition.p'
-
-
 class ImageDetect(object):
 
     def __init__(self):
+        self.__classes = Classes()
+        self.__config  = Config()
+        self.__class   = self.__config.get('detection_class')
+        self.__conf    = self.__config.get('confidence_threshold')
+        self.__model   = self.__config.get('caffe_model')
+        self.__proto   = self.__config.get('caffe_prototype')
+        self.__cmodel  = self.__config.get('classifier_model')
+        self.__dmodel  = self.__config.get('decomposition_model')
+        self.__pcacomp = self.__config.get('pca_components')
+        self.__caffe = cv2.dnn.readNetFromCaffe(self.__proto, self.__model)
         self.__make_convolutional_model()
-        self.__make_caffe_model()
-        if isfile(CLASSIFIER_MODEL) and isfile(DECOMPOSITION_MODEL):
+        if isfile(self.__cmodel) and isfile(self.__dmodel):
             print('Using existing models...')
             self.__load_classifier()
             self.__load_decomposition()
@@ -45,23 +47,20 @@ class ImageDetect(object):
             outputs = [mn.get_layer('conv_pw_13_relu').output]
         )
 
-    def __make_caffe_model(self):
-        self.__caffe = cv2.dnn.readNetFromCaffe(CAFFE_PROTOTYPE, CAFFE_MODEL)
-
     def __save_classifier(self):
-        fp = open(CLASSIFIER_MODEL, 'wb')
+        fp = open(self.__cmodel, 'wb')
         pickle.dump(self.__classifier, fp)
 
     def __load_classifier(self):
-        fp = open(CLASSIFIER_MODEL, 'rb')
+        fp = open(self.__cmodel, 'rb')
         self.__classifier = pickle.load(fp)
 
     def __save_decomposition(self):
-        fp = open(DECOMPOSITION_MODEL, 'wb')
+        fp = open(self.__dmodel, 'wb')
         pickle.dump(self.__decomposition, fp)
 
     def __load_decomposition(self):
-        fp = open(DECOMPOSITION_MODEL, 'rb')
+        fp = open(self.__dmodel, 'rb')
         self.__decomposition = pickle.load(fp)
 
     def __conv_predict(self, image):
@@ -88,7 +87,7 @@ class ImageDetect(object):
 
     def __train_classifier(self):
         features, labels = self.__generate_training_data()
-        self.__decomposition = PCA(n_components=PCA_COMPONENTS)
+        self.__decomposition = PCA(n_components=self.__pcacomp)
         features = self.__decomposition.fit_transform(features)
         self.__classifier = LinearSVC()
         self.__classifier.fit(features, labels)
@@ -104,10 +103,11 @@ class ImageDetect(object):
             127.5
         )
         self.__caffe.setInput(scaled)
-        cats = self.__caffe.forward()
-        for i in np.arange(0, cats.shape[2]):
-            if cats[0,0,i,2] > CONFIDENCE_THRESHOLD and cats[0,0,i,1] == 8:
-                bounds  = cats[0,0,i,3:7] * np.array([w,h,w,h])
+        items = self.__caffe.forward()
+        for i in np.arange(0, items.shape[2]):
+            cls = int(items[0,0,i,1])
+            if items[0,0,i,2] > self.__conf and self.__classes.get(cls) == self.__class:
+                bounds  = items[0,0,i,3:7] * np.array([w,h,w,h])
                 bounds  = bounds.astype(np.int)
                 a,b,c,d = bounds
                 image   = image[a:c,b:d]
