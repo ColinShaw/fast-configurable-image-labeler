@@ -1,3 +1,3 @@
-# Fast Cat Face Labeler
+# Fast Configurable Image Labeler
 
 
