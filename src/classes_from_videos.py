@@ -2,20 +2,23 @@ from moviepy.editor import VideoFileClip
 from os.path        import exists, splitext
 from scipy.misc     import imsave
 from os             import makedirs, listdir
+from config         import Config
+from classes        import Classes
 import numpy as np
 import cv2
        
 
-CONFIDENCE_THRESHOLD = 0.7
-CAFFE_PROTOTYPE      = 'models/mobilenet_ssd.prototxt'
-CAFFE_MODEL          = 'models/mobilenet_ssd.caffemodel'
-
-
 class ClassesFromVideos(object):
 
     def __init__(self):
-        self.__count = 0
-        self.__caffe = cv2.dnn.readNetFromCaffe(CAFFE_PROTOTYPE, CAFFE_MODEL)
+        self.__classes = Classes()
+        self.__config  = Config()
+        self.__class   = self.__config.get('detection_class')
+        self.__conf    = self.__config.get('confidence_threshold')
+        self.__model   = self.__config.get('caffe_model')
+        self.__proto   = self.__config.get('caffe_prototype')
+        self.__caffe   = cv2.dnn.readNetFromCaffe(self.__proto, self.__model)
+        self.__count   = 0
 
     def __detect(self, class_name, image):
         if len(image.shape) == 3 and image.shape[2] == 3:
@@ -28,10 +31,11 @@ class ClassesFromVideos(object):
                 127.5
             )
             self.__caffe.setInput(scaled)
-            cats = self.__caffe.forward()
-            for i in np.arange(0, cats.shape[2]):
-                if cats[0,0,i,2] > CONFIDENCE_THRESHOLD and cats[0,0,i,1] == 8:
-                    bounds  = cats[0,0,i,3:7] * np.array([w,h,w,h])
+            items = self.__caffe.forward()
+            for i in np.arange(0, items.shape[2]):
+                cls = int(items[0,0,i,1])
+                if items[0,0,i,2] > self.__conf and self.__classes.get(cls) == self.__class:
+                    bounds  = items[0,0,i,3:7] * np.array([w,h,w,h])
                     a,b,c,d = bounds.astype(np.int)
                     image   = image[a:c,b:d]
                     if image.shape[0]>127 and image.shape[1]>127:

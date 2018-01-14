@@ -1,6 +1,6 @@
 class Classes(object):
 
-    self.__classes = [
+    __classes = [
         'background', 
         'aeroplane', 
         'bicycle', 

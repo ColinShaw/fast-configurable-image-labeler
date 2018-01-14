@@ -1,14 +1,15 @@
 from os import unlink
-
-
-CLASSIFIER_MODEL     = 'models/classifier.p'
-DECOMPOSITION_MODEL  = 'models/decomposition.p'
+from config import Config
 
 
 class Cleanup(object):
 
     def __init__(self):
-        self.__files = [CLASSIFIER_MODEL, DECOMPOSITION_MODEL]
+        self.__config = Config()
+        self.__files = [
+            self.__config.get('classifier_model'),
+            self.__config.get('decomposition_model')
+        ]
 
     def cleanup(self):
         for f in self.__files:

@@ -1,0 +1,10 @@
+detection_class:     'cat'
+null_classname:      'null'
+
+confidence_threshold: 0.7
+
+caffe_prototype:     'models/mobilenet_ssd.prototxt'
+caffe_model:         'models/mobilenet_ssd.caffemodel'
+classifier_model:    'models/classifier.p'
+decomposition_model: 'models/decomposition.p'
+
