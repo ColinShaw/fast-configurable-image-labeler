@@ -3,7 +3,7 @@ from keras.models          import Model
 from scipy.misc            import imread, imresize
 from sklearn.svm           import LinearSVC
 from sklearn.decomposition import PCA
-from os.path               import isfile, splitext, isdir
+from os.path               import isfile, isdir
 from os                    import listdir
 from config                import Config
 from classes               import Classes
