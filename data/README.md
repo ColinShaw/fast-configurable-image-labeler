@@ -1,5 +1,3 @@
-The negative training examples go in the `/negative/` directory
-and the positive training examples go in the `/positive/` 
-directory.  The positive examples need to be organized by 
-class within the directory.  
+Put training data classes here.  Each class is a directory.  You
+can include a directory `null` for a negative class.
 

@@ -12,6 +12,7 @@ import cv2
 
 CONFIDENCE_THRESHOLD = 0.7
 PCA_COMPONENTS       = 30
+NULL_CLASSNAME       = 'null'
 CAFFE_PROTOTYPE      = 'models/mobilenet_ssd.prototxt'
 CAFFE_MODEL          = 'models/mobilenet_ssd.caffemodel'
 CLASSIFIER_MODEL     = 'models/classifier.p'
@@ -71,35 +72,19 @@ class ImageDetect(object):
         label = self.__model.predict([image])
         return label.ravel()
 
-    def __generate_negative_training_data(self):
+    def __generate_training_data(self):
         features, labels = [], []
-        dirlist = listdir('data/negative') 
-        image_names = [f for f in dirlist if 'png' in f] 
-        for image_name in image_names:
-            labels.append('null')
-            feature = imread('data/negative/{}'.format(image_name))
-            feature = self.__conv_predict(feature)
-            features.append(feature)
-        return features, labels
-
-    def __generate_positive_training_data(self):
-        features, labels = [], []
-        dirlist = listdir('data/positive')
-        dir_names = [d for d in dirlist if isdir('data/positive/{}'.format(d))]
+        dirlist = listdir('data')
+        dir_names = [d for d in dirlist if isdir('data/{}'.format(d))]
         for dir_name in dir_names:
-            dirlist = listdir('data/positive/{}'.format(dir_name))
+            dirlist = listdir('data/{}'.format(dir_name))
             image_names = [f for f in dirlist if 'png' in f]
             for image_name in image_names:
                 labels.append(dir_name)
-                feature = imread('data/positive/{}/{}'.format(dir_name, image_name))
+                feature = imread('data/{}/{}'.format(dir_name, image_name))
                 feature = self.__conv_predict(feature)
                 features.append(feature)
         return features, labels
-
-    def __generate_training_data(self):
-        features_p, labels_p = self.__generate_positive_training_data()
-        features_n, labels_n = self.__generate_negative_training_data()
-        return features_p + features_n, labels_p + labels_n
 
     def __train_classifier(self):
         features, labels = self.__generate_training_data()
@@ -136,20 +121,19 @@ class ImageDetect(object):
     def label_image(self, image):
         items = self.annotations(image)
         for item in items:
-            #if item[1] != 'null':
+            #if item[1] != NULL_CLASSNAME:
             if True:
-                a,b,c,d = item[0]
                 cv2.rectangle(
                     image,
-                    (a,b),
-                    (c,d),
+                    (item[0][0],item[0][1]),
+                    (item[0][2],item[0][3]),
                     (0,255,0),
                     1
                 )
                 cv2.putText(
                     image,
                     item[1],
-                    (a,b-2),
+                    (item[0][0],item[0][1]-2),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,
                     (0,255,0)

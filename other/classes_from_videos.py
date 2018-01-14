@@ -6,7 +6,7 @@ import numpy as np
 import cv2
        
 
-CONFIDENCE_THRESHOLD = 0.5
+CONFIDENCE_THRESHOLD = 0.7
 CAFFE_PROTOTYPE      = '../models/mobilenet_ssd.prototxt'
 CAFFE_MODEL          = '../models/mobilenet_ssd.caffemodel'
 
@@ -31,7 +31,7 @@ def detect(class_name, image):
                 image   = image[a:c,b:d]
                 if image.shape[0]>127 and image.shape[1]>127:
                     global cnt
-                    save_name = '../data/positive/{}/{}.png'.format(class_name, cnt)
+                    save_name = '../data/{}/{}.png'.format(class_name, cnt)
                     imsave(save_name, image)
                     cnt += 1
 
@@ -43,8 +43,8 @@ for video_name in video_names:
     class_name = splitext(video_name)[0]
     class_name = ''.join(i for i in class_name if not i.isdigit())
 
-    if not exists('../data/positive/{}'.format(class_name)):
-        makedirs('../data/positive/{}'.format(class_name))
+    if not exists('../data/{}'.format(class_name)):
+        makedirs('../data/{}'.format(class_name))
 
     video_file = 'videos/{}'.format(video_name)
     for frame in VideoFileClip(video_file).iter_frames():
