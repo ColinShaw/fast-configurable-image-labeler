@@ -1,4 +1,4 @@
-detection_class:     'cat'
+detection_class:     'person'
 null_classname:      'null'
 
 confidence_threshold: 0.7

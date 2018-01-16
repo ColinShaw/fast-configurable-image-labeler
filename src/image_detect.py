@@ -37,14 +37,10 @@ class ImageDetect(object):
             self.__save_decomposition()
 
     def __make_convolutional_model(self):
-        mn = mobilenet.MobileNet(
+        self.__model = mobilenet.MobileNet(
             weights     = 'imagenet', 
             include_top = False,
             input_shape = (128,128,3)
-        )
-        self.__model = Model(
-            inputs  = [mn.input], 
-            outputs = [mn.get_layer('conv_pw_13_relu').output]
         )
 
     def __save_classifier(self):

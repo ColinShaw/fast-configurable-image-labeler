@@ -49,24 +49,34 @@ objective is to be able to run the detector
 on small hardware in as close to realtime as
 possible.
 
-In the case of MobileNet, prior to the dense
-classification section, we are left with a 
-vector space of --- dimensions.  This is an
+In the case of MobileNet, we are left with a 
+vector space of 16,384 dimensions.  This is an
 improvement, as the original scaled images feeding
 the network span a space of 49,152 dimensions, but 
 the real improvement is in the degree that we can 
-project this down further.  The benefit of using 
-the convnet first is that the vector before the 
+project this down further.  You see, even though it 
+is only a 3:1 reduction in terms of the dimensionality,
+one of the beautiful things about the MobileNet
+architecture is that it adds a lot of layers help clump
+like features in a fairly large output vector prior
+to the dense classification layers.  The benefit of using 
+convnets first is that the vector before the 
 classifier has effectively been trained to be good 
-at reducing the space.  Of course there are many
-other techniques for doing similar, such as using
-a histogram of oriented gradients approach.  However,
-the HOG approach doesn't abstract to examples that
-are not trained as readily.  Because of this, 
-it tends to need a larger spanning space for the
-classifier, which results in a more complex 
-top end.  Using something like MobileNet simply
-gives better performance in this situation.
+at reducing the space, and MobileNet does a concise job
+of this.  
+
+There are many other techniques for doing something 
+similar, such as using a histogram of oriented 
+gradients approach.  However, the HOG approach 
+doesn't abstract to examples that are not trained 
+as readily.  Because of this, it tends to need 
+a larger spanning space for the classifier, which 
+results in a more complex top end.  Using something 
+like MobileNet simply gives better performance 
+in this situation.  Moreover, even using the entire
+convolutional part of MobileNet, we only have just
+north of 3 million parameters, significantly less
+than most other competitive networks like VGG16.
 
 The output of the convolutional layers of 
 MobileNet, when subjected to the training data,
@@ -74,7 +84,7 @@ are used to train a pricipal components
 analysis model with restricted dimensional 
 output.  If you experiment a bit with MobileNet,
 you will find that it actually doesn't emit the
-full cadre of --- dimensions for particular
+full cadre of 16,384 dimensions for particular
 classes, but rather something a bit smaller.  For 
 cat data, that something is only 3,341 significant
 dimensions.  That is great, already an improvement
@@ -152,7 +162,11 @@ these images after they are detected to make sure
 they seem appropriate.  Features that are 
 completely wrong or that are particularly specific
 aspects of the object may not be the best to train
-with.  
+with.  You might also want to make sure that 
+the generator feature produces images to train 
+on.  This is just a word to the wise based on
+having used the wrong detection class for the
+images you are trying to train. 
 
 To make it simpler for generating the videos, you
 can use the built-in video feature.  Invoke it
@@ -186,7 +200,10 @@ be good would be the background from the video
 frame, any aberrant background items (e.g. if there
 are cars in a street in the background), etc.  Just
 capture a few shots and dumpy them in the `/data/` 
-directory under the `null` class.
+directory under the `null` class.  You may want to
+put some suitably generic examples of items in the
+class you are detecting to help prevent erroreous
+classifications.
 
 At this point you can do two things, either process
 from a live video or create a labeled video from 
