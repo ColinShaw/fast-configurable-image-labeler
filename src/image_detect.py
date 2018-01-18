@@ -18,6 +18,7 @@ class ImageDetect(object):
         self.__classes = Classes()
         self.__config  = Config()
         self.__class   = self.__config.get('detection_class')
+        self.__null    = self.__config.get('null_classname')
         self.__conf    = self.__config.get('confidence_threshold')
         self.__model   = self.__config.get('caffe_model')
         self.__proto   = self.__config.get('caffe_prototype')
@@ -114,11 +115,9 @@ class ImageDetect(object):
                     results.append((bounds, label))
         return results 
 
-    def label_image(self, image):
-        items = self.annotations(image)
+    def label_image(self, image, items):
         for item in items:
-            #if item[1] != NULL_CLASSNAME:
-            if True:
+            if item[1] != self.__null:
                 cv2.rectangle(
                     image,
                     (item[0][0],item[0][1]),

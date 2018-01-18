@@ -12,7 +12,8 @@ class RealtimeDetect(object):
         while True:
             ret, image = self.__camera.read()
             if ret:
-                image = self.__imgdet.label_image(image)
+                items = self.__imgdet.annotations(image)
+                image = self.__imgdet.label_image(image, items)
                 cv2.imshow('Image Detection', image)
                 if cv2.waitKey(25) & 0xFF == ord('q'):
                     break

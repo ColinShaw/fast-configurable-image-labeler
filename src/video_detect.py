@@ -10,7 +10,8 @@ class VideoDetect(object):
     def detect(self, source, destination):
         clip, frames = VideoFileClip(source), []
         for frame in clip.iter_frames():
-            frame = self.__imgdet.label_image(frame)
+            items = self.__imgdet.annotations(frame)
+            frame = self.__imgdet.label_image(frame, items)
             frames.append(frame)
         clip = ImageSequenceClip(frames, fps=clip.fps)
         clip.write_videofile(destination, audio=False)
