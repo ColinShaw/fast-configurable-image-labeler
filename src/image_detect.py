@@ -125,13 +125,20 @@ class ImageDetect(object):
                     (0,255,0),
                     1
                 )
+                cv2.rectangle(
+                    image,
+                    (item[0][0],item[0][1]-20),
+                    (item[0][2],item[0][1]),
+                    (0,255,0),
+                    cv2.FILLED
+                )
                 cv2.putText(
                     image,
                     item[1],
-                    (item[0][0],item[0][1]-2),
+                    (item[0][0]+2,item[0][1]-2),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,
-                    (0,255,0)
+                    (0,0,0)
                 )
         return image
 
